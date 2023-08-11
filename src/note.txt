@@ -1,0 +1,92 @@
+CREATE TABLE "products" (
+	"id" serial NOT NULL,
+	"nome" TEXT NOT NULL,
+	"description" TEXT,
+	"value" integer NOT NULL,
+	"mainPhoto" integer,
+	"userId" integer NOT NULL UNIQUE,
+	"status" BOOLEAN NOT NULL,
+	"createdAt" TIMESTAMP NOT NULL DEFAULT 'NOW',
+	CONSTRAINT "products_pk" PRIMARY KEY ("id")
+) WITH (
+  OIDS=FALSE
+);
+
+
+
+CREATE TABLE "photos" (
+	"id" serial NOT NULL,
+	"url" TEXT NOT NULL,
+	"productId" integer NOT NULL,
+	CONSTRAINT "photos_pk" PRIMARY KEY ("id")
+) WITH (
+  OIDS=FALSE
+);
+
+
+
+CREATE TABLE "users" (
+	"id" serial NOT NULL,
+	"name" TEXT NOT NULL,
+	"email" TEXT NOT NULL UNIQUE,
+	"password" TEXT NOT NULL,
+	"cpf" varchar(11) NOT NULL UNIQUE,
+	"phoneNumber" varchar(11) NOT NULL,
+	"createdAt" TIMESTAMP NOT NULL DEFAULT 'NOW',
+	CONSTRAINT "users_pk" PRIMARY KEY ("id")
+) WITH (
+  OIDS=FALSE
+);
+
+
+
+CREATE TABLE "sessions" (
+	"id" serial NOT NULL,
+	"userId" integer NOT NULL,
+	"token" TEXT NOT NULL UNIQUE,
+	"createdAt" TIMESTAMP NOT NULL DEFAULT 'NOW',
+	CONSTRAINT "sessions_pk" PRIMARY KEY ("id")
+) WITH (
+  OIDS=FALSE
+);
+
+
+
+CREATE TABLE "category" (
+	"id" serial NOT NULL UNIQUE,
+	"name" TEXT NOT NULL,
+	CONSTRAINT "category_pk" PRIMARY KEY ("id")
+) WITH (
+  OIDS=FALSE
+);
+
+
+
+CREATE TABLE "produtcsCategory" (
+	"id" serial NOT NULL,
+	"productId" integer NOT NULL,
+	"categoryId" integer NOT NULL,
+	CONSTRAINT "produtcsCategory_pk" PRIMARY KEY ("id")
+) WITH (
+  OIDS=FALSE
+);
+
+
+
+ALTER TABLE "products" ADD CONSTRAINT "products_fk0" FOREIGN KEY ("mainPhoto") REFERENCES "photos"("id");
+ALTER TABLE "products" ADD CONSTRAINT "products_fk1" FOREIGN KEY ("userId") REFERENCES "users"("id");
+
+ALTER TABLE "photos" ADD CONSTRAINT "photos_fk0" FOREIGN KEY ("productId") REFERENCES "products"("id");
+
+
+ALTER TABLE "sessions" ADD CONSTRAINT "sessions_fk0" FOREIGN KEY ("userId") REFERENCES "users"("id");
+
+
+ALTER TABLE "produtcsCategory" ADD CONSTRAINT "produtcsCategory_fk0" FOREIGN KEY ("productId") REFERENCES "products"("id");
+ALTER TABLE "produtcsCategory" ADD CONSTRAINT "produtcsCategory_fk1" FOREIGN KEY ("categoryId") REFERENCES "category"("id");
+
+
+
+
+
+
