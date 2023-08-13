@@ -4,11 +4,20 @@ import { db } from "../database/databaseConnection.js";
 export const getProductsHome = async (req, res) => {
     try {
         const list = await db.query(`
-        SELECT prod.name, prod."mainPhoto", prod.value, prod.id, cat.name AS category
-        FROM products AS prod
-        JOIN "productCategory" AS "proCat" ON prod.id = "proCat"."productId"
-        JOIN category AS cat ON "proCat"."categoryId" = cat.id 
-        LIMIT 40;
+            SELECT
+                p.id,
+                p.name,
+                p.value,
+                c.name AS category,
+                (SELECT url FROM photos ph WHERE ph."productId" = p.id ORDER BY ph.id LIMIT 1) AS "photo"
+            FROM
+                products p
+            JOIN
+                "productCategory" pc ON p.id = pc."productId"
+            JOIN
+                category c ON pc."categoryId" = c.id
+            ORDER BY
+                p.id;
         `);
         res.send(list.rows);
     } catch (error) {
@@ -20,12 +29,37 @@ export const getSectorProducts = async (req, res) => {
     const { sectorPage } = req.params;
     try {
         const list = await db.query(`
-        SELECT prod.name, prod."mainPhoto", prod.value, prod.id, cat.name AS category
-        FROM products AS prod
-        JOIN "productCategory" AS "proCat" ON prod.id = "proCat"."productId"
-        JOIN category AS cat ON "proCat"."categoryId" = cat.id 
-        WHERE cat.name = $1
-        ;
+            SELECT
+                p.id ,
+                p.name ,
+                p.value ,
+                c.name  category,
+                s2.name AS sector2_name,
+                ph.url AS photo
+            FROM
+                products p
+            JOIN
+                "productCategory" pc ON p.id = pc."productId"
+            JOIN
+                category c ON pc."categoryId" = c.id
+            JOIN
+                "categorySector1" cs1 ON c.id = cs1."categoryId"
+            JOIN
+                sector1 s1 ON cs1.sector1id = s1.id
+            JOIN
+                sector1sector2 s1s2 ON s1.id = s1s2.sector1id
+            JOIN
+                sector2 s2 ON s1s2.sector2id = s2.id
+            LEFT JOIN LATERAL (
+                SELECT url
+                FROM photos
+                WHERE "productId" = p.id
+                ORDER BY id
+                LIMIT 1
+            ) ph ON true
+            WHERE
+                s2.name = $1;
+    
         `, [sectorPage]);
         res.send(list.rows);
     } catch (error) {
@@ -39,16 +73,26 @@ export const getThisProduct = async (req, res) => {
     const { id } = req.params;
     try {
         const list = await db.query(`
-        SELECT products.id, products.name AS "product", products.description, 
-        products."mainPhoto", products.value,
-        users.name, users.email, users."phoneNumber" FROM products 
-        JOIN users ON users.id = products."userId"
-        WHERE products.id = $1
-        LIMIT 1
+            SELECT 
+                products.id, 
+                products.name AS "product", 
+                products.description, 
+                products.value,
+                users.name, 
+                users.email, 
+                users."phoneNumber",
+                ARRAY_AGG(photos.url) AS "photos"
+            FROM products 
+            JOIN users ON users.id = products."userId"
+            LEFT JOIN photos ON products.id = photos."productId"
+            WHERE products.id = $1
+            GROUP BY products.id, users.name, users.email, users."phoneNumber"
+            LIMIT 1;
         ;
         `, [id]);
         res.send(list.rows[0]);
     } catch (error) {
+        console.log(error.message)
         res.status(500).send(error.message);
     }
 }
@@ -56,13 +100,11 @@ export const getThisProduct = async (req, res) => {
 export const getHeaderOptions = async (req, res) => {
     try {
         const list = await db.query(`
-        SELECT category.id, category.name FROM sector2
-        JOIN sector1 ON sector2."categoryId" = sector1."categoryId"
-        JOIN category ON sector1."categoryId" = category.id
-        ;
+        SELECT * FROM sector2;
         `,);
         res.send(list.rows);
     } catch (error) {
+        console.log(error.message);
         res.status(500).send(error.message);
     }
 }
@@ -71,27 +113,58 @@ export const getMyAds = async (req, res) => {
     const { userId } = res.locals;
     try {
         const list = await db.query(`
-        SELECT prod.name, prod."mainPhoto", prod.value, prod.id, cat.name AS category
-        FROM products AS prod
-        JOIN "productCategory" AS "proCat" ON prod.id = "proCat"."productId"
-        JOIN category AS cat ON "proCat"."categoryId" = cat.id
-        WHERE prod."userId" = $1
-        ;
+            SELECT
+                p.id ,
+                p.name ,
+                p.value ,
+                c.name category,
+                s2.name AS sector2_name,
+                ph.url photo
+            FROM
+                products p
+            JOIN
+                "productCategory" pc ON p.id = pc."productId"
+            JOIN
+                category c ON pc."categoryId" = c.id
+            JOIN
+                "categorySector1" cs1 ON c.id = cs1."categoryId"
+            JOIN
+                sector1 s1 ON cs1.sector1id = s1.id
+            JOIN
+                sector1sector2 s1s2 ON s1.id = s1s2.sector1id
+            JOIN
+                sector2 s2 ON s1s2.sector2id = s2.id
+            LEFT JOIN LATERAL (
+                SELECT url
+                FROM photos
+                WHERE "productId" = p.id
+                ORDER BY id
+                LIMIT 1
+            ) ph ON true
+            WHERE
+                p."userId" = $1;
+
         `, [userId]);
         res.send(list.rows);
     } catch (error) {
+        console.log(error.message)
         res.status(500).send(error.message);
     }
 }
 
-export const getSubHeaders = async (req, res) => {
+export const getSector1 = async (req, res) => {
     const { id } = req.params;
     try {
         const response = await db.query(`
-        SELECT category.id, category.name FROM sector1
-        JOIN category ON sector1."categoryId" = category.id
-        WHERE category.id = $1
-        ;
+            SELECT
+                sector1.id,
+                sector1.name
+            FROM sector1
+            JOIN sector1sector2
+                ON sector1.id = sector1sector2.sector1id
+            JOIN sector2
+                ON sector2.id = sector1sector2.sector2id
+            WHERE sector2.id = $1;
         `, [id]);
         res.send(response.rows);
     } catch (error) {
@@ -103,9 +176,13 @@ export const getCategory = async (req, res) => {
     const { id } = req.params;
     try {
         const response = await db.query(`
-        SELECT category.id, category.name FROM category
-        WHERE category.id = $1
-        ;
+        SELECT category.id, category.name
+            FROM category
+            JOIN "categorySector1"
+                ON category.id = "categorySector1"."categoryId"
+            JOIN sector1
+                ON "categorySector1".sector1id = sector1.id
+            WHERE sector1.id = $1;
         `, [id]);
         res.send(response.rows);
     } catch (error) {
@@ -113,24 +190,11 @@ export const getCategory = async (req, res) => {
     }
 }
 
-export const getAllCategorys = async (req, res) => {
+export const getSector2 = async (req, res) => {
     try {
         const sector2 = await db.query(`
-        SELECT category.id, category.name FROM sector2
-        JOIN sector1 ON sector2."categoryId" = sector1."categoryId"
-        JOIN category ON sector1."categoryId" = category.id
-        ;
+        SELECT * FROM sector2;
         `,);
-        // const subHeader = await db.query(`
-        // SELECT category.id, category.name FROM sector1
-        // JOIN category ON sector1."categoryId" = category.id
-        // ;
-        // `, );
-        // const categorys = await db.query(`
-        // SELECT category.id, category.name FROM category
-        // ;
-        // `, );
-
         res.send(sector2.rows);
     } catch (error) {
         res.status(500).send(error.message);
@@ -147,13 +211,13 @@ export const insertNewProduct = async (req, res) => {
         const productInsert = await db.query(`
             INSERT INTO products (name, description, value, "userId", status, "createdAt") VALUES ($1, $2, $3, $4, $5, $6)
         `, [name, description, value, userId, true, timeNow]);
-        
+
 
         const id = await db.query(`
             SELECT id FROM products
             WHERE "userId" = $1 AND "createdAt" = $2;
         `, [userId, timeNow]);
-        if(id.rowCount===0)return(console.log('produto não encontrado'))
+        if (id.rowCount === 0) return (console.log('produto não encontrado'))
 
         const categoryInsert = await db.query(`
             INSERT INTO "productCategory" ("productId", "categoryId") VALUES ($1, $2)

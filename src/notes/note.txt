@@ -1,0 +1,74 @@
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY ,
+  nome TEXT NOT NULL,
+  description TEXT NULL,
+  value INTEGER NOT NULL,
+  "userId" INTEGER NOT NULL,
+  status BOOLEAN NOT NULL DEFAULT true,
+  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+  FOREIGN KEY ("userId") REFERENCES users(id)
+);
+
+CREATE TABLE photos (
+  id SERIAL PRIMARY KEY ,
+  url TEXT NOT NULL,
+  "productId" INTEGER NOT NULL,
+  FOREIGN KEY ("productId") REFERENCES products(id)
+);
+
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY ,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  cpf VARCHAR(11) UNIQUE NOT NULL,
+  "phoneNumber" VARCHAR(11) NOT NULL,
+  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE sessions (
+  id SERIAL PRIMARY KEY ,
+  "userId" INTEGER NOT NULL,
+  token TEXT UNIQUE NOT NULL,
+  "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+  FOREIGN KEY ("userId") REFERENCES users(id)
+);
+
+CREATE TABLE category (
+  id SERIAL PRIMARY KEY ,
+  name TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE "productCategory" (
+  id SERIAL PRIMARY KEY ,
+  "productId" INTEGER NOT NULL,
+  "categoryId" INTEGER NOT NULL,
+  FOREIGN KEY ("productId") REFERENCES products(id),
+  FOREIGN KEY ("categoryId") REFERENCES category(id)
+);
+
+CREATE TABLE sector1 (
+  id SERIAL PRIMARY KEY ,
+  name TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE sector2 (
+  id SERIAL PRIMARY KEY ,
+  name TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE sector1sector2 (
+  id SERIAL PRIMARY KEY ,
+  sector1id INTEGER NOT NULL,
+  sector2id INTEGER NOT NULL,
+  FOREIGN KEY (sector1id) REFERENCES sector1(id),
+  FOREIGN KEY (sector2id) REFERENCES sector2(id)
+);
+
+CREATE TABLE "categorySector1" (
+  id SERIAL PRIMARY KEY ,
+  "categoryId" INTEGER NOT NULL,
+  sector1id INTEGER NOT NULL,
+  FOREIGN KEY ("categoryId") REFERENCES category(id),
+  FOREIGN KEY (sector1id) REFERENCES sector1(id)
+);

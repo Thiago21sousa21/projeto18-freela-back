@@ -1,14 +1,14 @@
 import { Router } from "express";
-import { getAllCategorys, getCategory, getHeaderOptions, 
-        getMyAds, getProductsHome, getSectorProducts, 
-        getSubHeaders, getThisProduct, insertNewProduct 
+import {  getCategory, getHeaderOptions, 
+        getMyAds, getProductsHome, getSector1, getSector2, getSectorProducts, 
+         getThisProduct, insertNewProduct 
         } from "../controllers/productsControllers.js";
 import { tokenValidation } from "../middlewares/tokenValidation.js";
 
 export const productsRoutes = Router();
 
-productsRoutes.get('/chooseCategory', getAllCategorys);
-productsRoutes.get('/chooseCategory/:id', getSubHeaders);
+productsRoutes.get('/chooseCategory', getSector2);
+productsRoutes.get('/chooseCategory/:id', getSector1);
 productsRoutes.get('/category/:id', getCategory);
 
 productsRoutes.get(`/headerOptions`, getHeaderOptions);
