@@ -21,6 +21,7 @@ export async function signup(req, res) {
 export async function signin(req, res) {
     const {email, password } = req.body;
     try {
+
        const user = await db.query(`
             SELECT * FROM users WHERE email = $1
        `, [email]);
