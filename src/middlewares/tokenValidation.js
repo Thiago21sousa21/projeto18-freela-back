@@ -10,7 +10,7 @@ export async function tokenValidation (req, res, next ){
         const response = await db.query(`
             SELECT * FROM sessions WHERE token = $1
         `, [token]);
-        if(response.rowCount === 0)return res.status(401).send('Usuárion não permitido!');
+        if(response.rowCount === 0)return res.status(401).send('Usuário não permitido!');
         res.locals.userId = response.rows[0].userId;
         next();
     }catch(error){

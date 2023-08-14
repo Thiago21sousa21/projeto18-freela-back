@@ -1,6 +1,6 @@
 CREATE TABLE products (
   id SERIAL PRIMARY KEY ,
-  nome TEXT NOT NULL,
+  name TEXT NOT NULL,
   description TEXT NULL,
   value INTEGER NOT NULL,
   "userId" INTEGER NOT NULL,
