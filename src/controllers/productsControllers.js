@@ -210,7 +210,7 @@ export const insertNewProduct = async (req, res) => {
     try {
         const productInsert = await db.query(`
             INSERT INTO products (name, description, value, "userId", status, "createdAt") VALUES ($1, $2, $3, $4, $5, $6)
-        `, [name, description, value, userId, true, timeNow]);
+        `, [name, description, value*100, userId, true, timeNow]);
 
 
         const id = await db.query(`
@@ -224,12 +224,33 @@ export const insertNewProduct = async (req, res) => {
         `, [id.rows[0].id, category]);
 
         for (const photoUrl of photos) {
+            if(!photoUrl)continue;
             await db.query(`
                 INSERT INTO photos ("productId", url) VALUES ($1, $2)
             `, [id.rows[0].id, photoUrl]);
         }
 
         res.send('ok');
+    } catch (error) {
+        console.log(error.message)
+        res.status(500).send(error.message);
+    }
+}
+
+export const deleteProduct = async (req, res) => {
+    const {id} = req.body;
+    try {
+        const response = await db.query(`
+            DELETE FROM "productCategory" WHERE "productId" = $1;        
+        `,[id]);
+        const response1 = await db.query(`
+            DELETE FROM photos WHERE "productId" = $1;        
+        `,[id]);
+        const response2 = await db.query(`
+            DELETE FROM products WHERE id = $1;        
+        `,[id]);
+        if(response2.rowCount===0)return res.status(400).send('Não deletado');
+        res.send(204);
     } catch (error) {
         console.log(error.message)
         res.status(500).send(error.message);
